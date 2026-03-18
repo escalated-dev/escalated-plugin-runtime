@@ -1,0 +1,34 @@
+{
+  "name": "@escalated-dev/plugin-runtime",
+  "version": "0.1.0",
+  "description": "Runtime host for Escalated plugins — loads plugins, handles JSON-RPC communication with the host framework",
+  "type": "module",
+  "main": "build/src/index.js",
+  "types": "build/src/index.d.ts",
+  "bin": {
+    "escalated-plugins": "./build/bin/escalated-plugins.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./build/src/index.d.ts",
+      "default": "./build/src/index.js"
+    }
+  },
+  "files": [
+    "build/"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "npx tsx --test tests/**/*.test.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@escalated-dev/plugin-sdk": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.37",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  },
+  "license": "MIT"
+}
