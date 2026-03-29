@@ -22,7 +22,12 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
+      - name: Clone and build plugin-sdk dependency
+        run: |
+          git clone --depth 1 https://github.com/escalated-dev/escalated-plugin-sdk.git /tmp/plugin-sdk
+          cd /tmp/plugin-sdk && npm ci && npm run build
+
       - run: npm ci
-      - run: npm install github:escalated-dev/escalated-plugin-sdk
+      - run: npm install /tmp/plugin-sdk
       - run: npm run build
       - run: npx tsx --test $(find tests -name '*.test.ts')
