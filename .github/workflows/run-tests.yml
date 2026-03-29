@@ -23,6 +23,6 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - run: npm ci
-      - run: npm install @escalated-dev/plugin-sdk@latest
+      - run: npm install github:escalated-dev/escalated-plugin-sdk
       - run: npm run build
       - run: npx tsx --test $(find tests -name '*.test.ts')
