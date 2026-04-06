@@ -19,6 +19,7 @@
   ],
   "scripts": {
     "build": "tsc",
+    "lint": "eslint .",
     "test": "npx tsx --test tests/**/*.test.ts",
     "prepublishOnly": "npm run build"
   },
@@ -27,8 +28,10 @@
   },
   "devDependencies": {
     "@types/node": "^20.19.37",
+    "eslint": "^9.0.0",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.0.0"
   },
   "license": "MIT"
 }
