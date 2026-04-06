@@ -1,5 +1,9 @@
 # @escalated-dev/plugin-runtime
 
+[![Tests](https://github.com/escalated-dev/escalated-plugin-runtime/actions/workflows/run-tests.yml/badge.svg)](https://github.com/escalated-dev/escalated-plugin-runtime/actions/workflows/run-tests.yml)
+[![Node.js](https://img.shields.io/badge/node.js-20+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/typescript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+
 Runtime host for Escalated plugins. Loads plugins, communicates with the host framework via JSON-RPC 2.0 over stdio.
 
 ## Usage
