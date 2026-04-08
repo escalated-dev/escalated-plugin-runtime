@@ -54,6 +54,10 @@ Host Framework (PHP/Ruby/Python)         Plugin Runtime (Node.js)
 - Action hooks degrade gracefully when the runtime is unavailable
 - Filter hooks return unmodified values when the runtime is down
 
+## Broadcasting Event Forwarding
+
+When the host framework has real-time broadcasting enabled, the runtime automatically forwards broadcasting events to plugins. The bridge sends these as standard action hooks (e.g., `broadcast.ticket.updated`, `broadcast.ticket.replied`) so plugins can react to real-time events without any additional configuration. See the [Plugin SDK README](https://github.com/escalated-dev/escalated-plugin-sdk#broadcastable-events) for the full list of broadcastable events.
+
 ## Protocol
 
 Communication uses JSON-RPC 2.0 over stdin/stdout. See the [Plugin SDK docs](https://github.com/escalated-dev/escalated-plugin-sdk) for the full protocol specification.
