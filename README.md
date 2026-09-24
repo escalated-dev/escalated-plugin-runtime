@@ -4,6 +4,7 @@
 [![Node.js](https://img.shields.io/badge/node.js-20+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Views](https://hits.sh/github.com/escalated-dev/escalated-plugin-runtime.svg?style=flat&label=views&color=007ec6)](https://hits.sh/github.com/escalated-dev/escalated-plugin-runtime/)
 
 Runtime host for [Escalated](https://escalated.dev) plugins. Loads plugins built with the [Plugin SDK](https://github.com/escalated-dev/escalated-plugin-sdk) and communicates with the host framework (Laravel, Rails, Django, AdonisJS) via JSON-RPC 2.0 over stdio.
 
