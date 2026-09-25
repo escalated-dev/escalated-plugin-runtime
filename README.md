@@ -71,4 +71,4 @@ Communication uses JSON-RPC 2.0 over stdin/stdout. See the [Plugin SDK docs](htt
 
 ## License
 
-MIT
+MIT - Copyright (c) Escalated.dev. See [LICENSE](LICENSE).
