@@ -112,5 +112,9 @@ export class Dispatcher {
 
 function withTimeout<T>(promise: T | Promise<T>, ms: number): Promise<T> {
   if (!(promise instanceof Promise)) return Promise.resolve(promise);
-  return Promise.race([promise, new Promise<T>((_, reject) => setTimeout(() => reject(new Error('Timeout')), ms))]);
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<T>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('Timeout')), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }

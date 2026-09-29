@@ -2,6 +2,7 @@ import { JsonRpcHandler } from './json-rpc.js';
 import { Dispatcher } from './dispatcher.js';
 import { PluginLoader } from './plugin-loader.js';
 import { createContextProxy } from './context-proxy.js';
+import { decodeHttpRequest } from './http-request.js';
 import type { ResolvedPlugin, PluginManifest } from '@escalated-dev/plugin-sdk';
 
 export class PluginRuntime {
@@ -55,6 +56,7 @@ export class PluginRuntime {
           protocol_version: '1.0',
           runtime_version: '0.1.0',
           compatible: params?.protocol_version === '1.0',
+          http_contract_versions: [1],
         };
 
       case 'manifest':
@@ -68,20 +70,10 @@ export class PluginRuntime {
         return await this.dispatcher.applyFilter(params.hook, params.value);
 
       case 'endpoint':
-        return await this.dispatcher.callEndpoint(params.plugin, params.method, params.path, {
-          body: params.body,
-          params: params.params ?? {},
-          query: params.query ?? {},
-          headers: params.headers ?? {},
-        });
+        return await this.dispatcher.callEndpoint(params.plugin, params.method, params.path, decodeHttpRequest(params));
 
       case 'webhook':
-        return await this.dispatcher.callWebhook(params.plugin, params.method, params.path, {
-          body: params.body,
-          params: params.params ?? {},
-          query: params.query ?? {},
-          headers: params.headers ?? {},
-        });
+        return await this.dispatcher.callWebhook(params.plugin, params.method, params.path, decodeHttpRequest(params));
 
       case 'activate': {
         const plugin = this.plugins.find((p) => p.name === params.plugin);
