@@ -54,7 +54,7 @@ export class PluginRuntime {
       case 'handshake':
         return {
           protocol_version: '1.0',
-          runtime_version: '0.1.0',
+          runtime_version: '0.2.0',
           compatible: params?.protocol_version === '1.0',
           http_contract_versions: [1],
         };
