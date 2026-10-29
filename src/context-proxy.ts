@@ -1,14 +1,24 @@
 import type { PluginContext, HttpClient } from '@escalated-dev/plugin-sdk';
+import { hostCall } from './host-call.js';
 
 type RpcSender = (method: string, params?: unknown) => Promise<unknown>;
 
 /**
  * Creates a PluginContext that proxies all calls to the host via JSON-RPC.
  * ctx.http is the exception — it runs in-process using fetch().
+ *
+ * A call made while serving a host call carries that call's id as
+ * `host_call_id`; one made outside any (a timer the plugin started) has none.
  */
 export function createContextProxy(pluginName: string, sendRequest: RpcSender): PluginContext {
-  const rpc = (method: string, params?: Record<string, unknown>) =>
-    sendRequest(method, { plugin: pluginName, ...params });
+  const rpc = (method: string, params?: Record<string, unknown>) => {
+    const serving = hostCall.getStore();
+    return sendRequest(method, {
+      plugin: pluginName,
+      ...params,
+      ...(serving === undefined ? {} : { host_call_id: serving }),
+    });
+  };
 
   return {
     config: {

@@ -3,6 +3,7 @@ import { Dispatcher } from './dispatcher.js';
 import { PluginLoader } from './plugin-loader.js';
 import { createContextProxy } from './context-proxy.js';
 import { decodeHttpRequest } from './http-request.js';
+import { hostCall } from './host-call.js';
 import type { ResolvedPlugin, PluginManifest } from '@escalated-dev/plugin-sdk';
 
 export class PluginRuntime {
@@ -27,10 +28,14 @@ export class PluginRuntime {
       this.dispatcher.register(plugin, ctx);
     }
 
-    // Handle incoming messages from host
+    // Handle incoming messages from host. A call with an id runs inside
+    // hostCall, so the ctx.* requests its handlers make carry that id.
     this.rpc.onMessage(async (msg) => {
       try {
-        const result = await this.handleMessage(msg);
+        const result =
+          msg.id === undefined || msg.id === null
+            ? await this.handleMessage(msg)
+            : await hostCall.run(msg.id, () => this.handleMessage(msg));
         if (msg.id !== undefined) {
           this.rpc.sendResponse(msg.id, result);
         }
@@ -57,6 +62,7 @@ export class PluginRuntime {
           runtime_version: '0.2.0',
           compatible: params?.protocol_version === '1.0',
           http_contract_versions: [1],
+          host_call_ids: true,
         };
 
       case 'manifest':
