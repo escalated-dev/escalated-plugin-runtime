@@ -1,5 +1,5 @@
 import { JsonRpcHandler } from './json-rpc.js';
-import { Dispatcher } from './dispatcher.js';
+import { Dispatcher, activePlugins, isActive } from './dispatcher.js';
 import { PluginLoader } from './plugin-loader.js';
 import { createContextProxy } from './context-proxy.js';
 import { decodeHttpRequest } from './http-request.js';
@@ -54,6 +54,8 @@ export class PluginRuntime {
 
   private async handleMessage(msg: { method: string; params?: any }): Promise<unknown> {
     const { method, params } = msg;
+    // The host's active plugins, when it sends them; undefined runs every plugin.
+    const active = activePlugins(params);
 
     switch (method) {
       case 'handshake':
@@ -63,23 +65,36 @@ export class PluginRuntime {
           compatible: params?.protocol_version === '1.0',
           http_contract_versions: [1],
           host_call_ids: true,
+          active_plugin_lists: true,
         };
 
       case 'manifest':
         return this.getManifests();
 
       case 'action':
-        await this.dispatcher.dispatchAction(params.hook, params.event);
+        await this.dispatcher.dispatchAction(params.hook, params.event, active);
         return { ok: true };
 
       case 'filter':
-        return await this.dispatcher.applyFilter(params.hook, params.value);
+        return await this.dispatcher.applyFilter(params.hook, params.value, active);
 
       case 'endpoint':
-        return await this.dispatcher.callEndpoint(params.plugin, params.method, params.path, decodeHttpRequest(params));
+        return await this.dispatcher.callEndpoint(
+          params.plugin,
+          params.method,
+          params.path,
+          decodeHttpRequest(params),
+          active,
+        );
 
       case 'webhook':
-        return await this.dispatcher.callWebhook(params.plugin, params.method, params.path, decodeHttpRequest(params));
+        return await this.dispatcher.callWebhook(
+          params.plugin,
+          params.method,
+          params.path,
+          decodeHttpRequest(params),
+          active,
+        );
 
       case 'activate': {
         const plugin = this.plugins.find((p) => p.name === params.plugin);
@@ -103,6 +118,7 @@ export class PluginRuntime {
         return { pong: true, timestamp: Date.now() };
 
       case 'cron': {
+        if (!isActive(params.plugin, active)) return { ok: true };
         const plugin = this.plugins.find((p) => p.name === params.plugin);
         const handler = plugin?.cron?.[params.schedule];
         if (handler) {
@@ -113,6 +129,7 @@ export class PluginRuntime {
       }
 
       case 'badge': {
+        if (!isActive(params.plugin, active)) return null;
         const plugin = this.plugins.find((p) => p.name === params.plugin);
         const widget = plugin?.widgets?.find((w) => w.component === params.component);
         if (widget?.badge) {
