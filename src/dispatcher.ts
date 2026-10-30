@@ -73,13 +73,13 @@ export class Dispatcher {
     }
   }
 
-  async dispatchAction(hook: string, event: unknown): Promise<void> {
-    const handlers = this.actions.get(hook) ?? [];
+  async dispatchAction(hook: string, event: unknown, active?: ActivePlugins): Promise<void> {
+    const handlers = (this.actions.get(hook) ?? []).filter((h) => isActive(h.pluginName, active));
     await Promise.allSettled(handlers.map((h) => withTimeout(h.handler(event, h.ctx), this.options.actionTimeout)));
   }
 
-  async applyFilter<T>(hook: string, value: T): Promise<T> {
-    const handlers = this.filters.get(hook) ?? [];
+  async applyFilter<T>(hook: string, value: T, active?: ActivePlugins): Promise<T> {
+    const handlers = (this.filters.get(hook) ?? []).filter((h) => isActive(h.pluginName, active));
     let current: unknown = value;
 
     for (const h of handlers) {
@@ -95,19 +95,55 @@ export class Dispatcher {
     return current as T;
   }
 
-  async callEndpoint(pluginName: string, method: string, path: string, req: EndpointRequest): Promise<unknown> {
+  async callEndpoint(
+    pluginName: string,
+    method: string,
+    path: string,
+    req: EndpointRequest,
+    active?: ActivePlugins,
+  ): Promise<unknown> {
+    assertActive(pluginName, active);
     const key = `${pluginName}:${method} ${path}`;
     const ep = this.endpoints.get(key);
     if (!ep) throw new Error(`Endpoint not found: ${key}`);
     return withTimeout(ep.handler(ep.ctx, req), this.options.endpointTimeout);
   }
 
-  async callWebhook(pluginName: string, method: string, path: string, req: EndpointRequest): Promise<unknown> {
+  async callWebhook(
+    pluginName: string,
+    method: string,
+    path: string,
+    req: EndpointRequest,
+    active?: ActivePlugins,
+  ): Promise<unknown> {
+    assertActive(pluginName, active);
     const key = `${pluginName}:${method} ${path}`;
     const wh = this.webhooks.get(key);
     if (!wh) throw new Error(`Webhook not found: ${key}`);
     return withTimeout(wh.handler(wh.ctx, req), this.options.webhookTimeout);
   }
+}
+
+/**
+ * The names of the plugins the host has active, as it sends them on a call
+ * (`plugins`). `undefined` means the host sent no list (an older host): every
+ * loaded plugin is treated as active, as before.
+ */
+export type ActivePlugins = readonly string[] | undefined;
+
+export function isActive(pluginName: string, active: ActivePlugins): boolean {
+  return active === undefined || active.includes(pluginName);
+}
+
+function assertActive(pluginName: string, active: ActivePlugins): void {
+  if (!isActive(pluginName, active)) throw new Error(`Plugin is not active: ${pluginName}`);
+}
+
+/** Reads the `plugins` list from call params; anything but an array of strings is no list. */
+export function activePlugins(params: { plugins?: unknown } | undefined): ActivePlugins {
+  const list = params?.plugins;
+  if (!Array.isArray(list)) return undefined;
+  return list.filter((name): name is string => typeof name === 'string');
 }
 
 function withTimeout<T>(promise: T | Promise<T>, ms: number): Promise<T> {

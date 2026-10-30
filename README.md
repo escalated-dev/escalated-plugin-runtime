@@ -74,6 +74,17 @@ call belongs to. A call made outside any host call (a timer the plugin started)
 has no `host_call_id`. The handshake answers `host_call_ids: true`; hosts that
 ignore the field keep working as before.
 
+### Active plugins
+
+The runtime loads every installed plugin, but only the host knows which ones an
+admin has activated. A host passes `plugins: [names]` (the manifest names of its
+active plugins) on `action`, `filter`, `endpoint`, `webhook`, `cron` and `badge`,
+and the runtime then runs only those plugins' handlers: actions and filters skip
+the others, an endpoint or webhook of an unlisted plugin is an error, `cron` does
+nothing and `badge` answers `null`. An empty list runs nothing. A call with no
+`plugins` key runs every loaded plugin, as older runtimes did. The handshake
+answers `active_plugin_lists: true`.
+
 ## Related Packages
 
 - **[Plugin SDK](https://github.com/escalated-dev/escalated-plugin-sdk)** — TypeScript SDK for building plugins
