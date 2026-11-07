@@ -1,6 +1,6 @@
 {
   "name": "@escalated-dev/plugin-runtime",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Runtime host for Escalated plugins — loads plugins, handles JSON-RPC communication with the host framework",
   "type": "module",
   "main": "build/src/index.js",
