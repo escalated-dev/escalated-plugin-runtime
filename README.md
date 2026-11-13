@@ -1,96 +1,133 @@
-# @escalated-dev/plugin-runtime
+<p align="center">
+  <a href="https://escalated.dev"><img src="https://raw.githubusercontent.com/escalated-dev/escalated/main/docs/assets/readme/logo.png" width="72" height="72" alt="Escalated"></a>
+</p>
 
-[![Tests](https://github.com/escalated-dev/escalated-plugin-runtime/actions/workflows/run-tests.yml/badge.svg)](https://github.com/escalated-dev/escalated-plugin-runtime/actions/workflows/run-tests.yml)
-[![Node.js](https://img.shields.io/badge/node.js-20+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![TypeScript](https://img.shields.io/badge/typescript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Views](https://hits.sh/github.com/escalated-dev/escalated-plugin-runtime.svg?style=flat&label=views&color=007ec6)](https://hits.sh/github.com/escalated-dev/escalated-plugin-runtime/)
+<h1 align="center">Escalated Plugin Runtime</h1>
 
-Runtime host for [Escalated](https://escalated.dev) plugins. Loads plugins built with the [Plugin SDK](https://github.com/escalated-dev/escalated-plugin-sdk) and communicates with the host framework (Laravel, Rails, Django, AdonisJS) via JSON-RPC 2.0 over stdio.
+<p align="center">
+  The Node.js process that runs Escalated plugins.<br>
+  Your backend's bridge starts it and talks to it over JSON-RPC 2.0 on stdio.
+</p>
 
-> **[escalated.dev](https://escalated.dev)** — Learn more, view demos, and compare Cloud vs Self-Hosted options.
+<p align="center">
+  <a href="https://escalated.dev"><b>Website</b></a> ·
+  <a href="https://escalated.dev/docs"><b>Docs</b></a> ·
+  <a href="https://escalated.dev/cloud"><b>Cloud</b></a> ·
+  <a href="https://github.com/escalated-dev/escalated-plugin-runtime/releases"><b>Releases</b></a>
+</p>
 
-## Installation
+<br>
+
+A plugin written with the [Plugin SDK](https://github.com/escalated-dev/escalated-plugin-sdk) is all the runtime needs:
+
+```ts
+import { definePlugin } from '@escalated-dev/plugin-sdk'
+
+export default definePlugin({
+  name: 'my-plugin',
+  version: '1.0.0',
+
+  actions: {
+    'ticket.created': async (event, ctx) => {
+      ctx.log.info('New ticket!', event)
+    },
+  },
+})
+```
+
+## What it does
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>Runs every installed plugin in one process</h3>
+      It finds plugins in <code>node_modules/@escalated-dev/plugin-*</code>, routes hooks to them, and proxies their <code>ctx.*</code> calls back to your backend.
+    </td>
+    <td width="50%" valign="top">
+      <h3>Never takes the helpdesk down with it</h3>
+      Your backend's bridge starts it on the first hook and restarts it with backoff after a crash. While it is down, filters return values unchanged.
+    </td>
+  </tr>
+</table>
+
+## Features
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+**Loading**
+- Discovers `@escalated-dev/plugin-*` packages
+- Started by your backend's bridge
+- Spawned lazily on first hook
+
+</td>
+<td width="33%" valign="top">
+
+**Dispatch**
+- Actions, filters, endpoints, webhooks
+- Cron jobs and widget badges
+- Activate and deactivate calls
+
+</td>
+<td width="33%" valign="top">
+
+**Resilience (via the bridge)**
+- Restarts with exponential backoff
+- Actions degrade when it is unavailable
+- Filters pass values through when down
+
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
+
+**Protocol**
+- JSON-RPC 2.0 over stdin and stdout
+- Concurrent host calls
+- `host_call_id` on every `ctx.*` call
+
+</td>
+<td width="33%" valign="top">
+
+**Active plugins**
+- Runs only plugins the host lists
+- Older hosts run every loaded plugin
+
+</td>
+<td width="33%" valign="top">
+
+**Real-time**
+- Forwards broadcast events as action hooks
+- No extra plugin configuration
+
+</td>
+</tr>
+</table>
+
+<p align="center"><sub><a href="docs/architecture.md">Every feature in detail</a></sub></p>
+
+<p align="center">
+  <a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js"></a>
+  <a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"></a>
+  <a href="https://www.jsonrpc.org/specification"><img src="https://img.shields.io/badge/JSON--RPC_2.0-555555?style=for-the-badge" alt="JSON-RPC 2.0"></a>
+</p>
+
+## Quick start
 
 ```bash
 npm install @escalated-dev/plugin-runtime
 ```
 
-This package is installed alongside any SDK plugins you want to use. The host framework's bridge spawns it automatically — you do not need to run it manually.
+Install it next to the plugins you want to use. Your backend's bridge spawns it, so you don't run it yourself. See [installation and usage](docs/installation.md).
 
-## Usage
+## Learn more
 
-The runtime is started by the framework bridge (e.g., `escalated-laravel`, `escalated-rails`, `escalated-django`). You typically do not invoke it directly. The bridge spawns it as:
-
-```bash
-node node_modules/@escalated-dev/plugin-runtime/dist/index.js
-```
-
-## Architecture
-
-The runtime is a long-lived Node.js process that:
-
-1. Discovers and loads installed plugins from `node_modules/@escalated-dev/plugin-*`
-2. Responds to JSON-RPC messages from the host framework
-3. Routes hooks (actions, filters) to registered plugin handlers
-4. Proxies `ctx.*` calls back to the host for data operations
-
-```
-Host Framework (PHP/Ruby/Python)         Plugin Runtime (Node.js)
-┌──────────────────────────┐   stdio    ┌──────────────────────────┐
-│  Bridge                  │◄──────────►│  @escalated-dev/          │
-│  - spawns subprocess     │  JSON-     │    plugin-runtime         │
-│  - dispatches hooks      │  RPC 2.0  │  ┌────────────────────┐   │
-│  - handles ctx.* calls   │           │  │ plugin-slack        │   │
-│                          │           │  │ plugin-jira         │   │
-│                          │           │  │ your-custom-plugin  │   │
-└──────────────────────────┘           │  └────────────────────┘   │
-                                       └──────────────────────────┘
-```
-
-### Resilience
-
-- Spawned lazily on first hook dispatch
-- Automatic restart with exponential backoff if the process crashes
-- Action hooks degrade gracefully when the runtime is unavailable
-- Filter hooks return unmodified values when the runtime is down
-
-## Broadcasting Event Forwarding
-
-When the host framework has real-time broadcasting enabled, the runtime automatically forwards broadcasting events to plugins. The bridge sends these as standard action hooks (e.g., `broadcast.ticket.updated`, `broadcast.ticket.replied`) so plugins can react to real-time events without any additional configuration. See the [Plugin SDK README](https://github.com/escalated-dev/escalated-plugin-sdk#broadcastable-events) for the full list of broadcastable events.
-
-## Protocol
-
-Communication uses JSON-RPC 2.0 over stdin/stdout. See the [Plugin SDK docs](https://github.com/escalated-dev/escalated-plugin-sdk) for the full protocol specification.
-
-### Host call ids
-
-The runtime serves host calls concurrently. Every `ctx.*` request a plugin makes
-while handling a host call (`action`, `filter`, `endpoint`, `webhook`, `cron`,
-`badge`, `activate`, `deactivate`) carries `host_call_id`: the JSON-RPC `id` of
-that host call. A host serving several requests at once uses it to find the
-request, and so the acting user and the plugin being served, that each `ctx.*`
-call belongs to. A call made outside any host call (a timer the plugin started)
-has no `host_call_id`. The handshake answers `host_call_ids: true`; hosts that
-ignore the field keep working as before.
-
-### Active plugins
-
-The runtime loads every installed plugin, but only the host knows which ones an
-admin has activated. A host passes `plugins: [names]` (the manifest names of its
-active plugins) on `action`, `filter`, `endpoint`, `webhook`, `cron` and `badge`,
-and the runtime then runs only those plugins' handlers: actions and filters skip
-the others, an endpoint or webhook of an unlisted plugin is an error, `cron` does
-nothing and `badge` answers `null`. An empty list runs nothing. A call with no
-`plugins` key runs every loaded plugin, as older runtimes did. The handshake
-answers `active_plugin_lists: true`.
-
-## Related Packages
-
-- **[Plugin SDK](https://github.com/escalated-dev/escalated-plugin-sdk)** — TypeScript SDK for building plugins
-- **[Escalated](https://github.com/escalated-dev/escalated)** — Shared frontend (Vue 3 + Inertia.js)
-- **[Escalated Docs](https://github.com/escalated-dev/escalated-docs)** — Full documentation
+- [Installation and usage](docs/installation.md) · [Architecture and broadcasting](docs/architecture.md) · [Protocol](docs/protocol.md)
+- [Releasing this package](RELEASE.md)
+- [Plugin SDK](https://github.com/escalated-dev/escalated-plugin-sdk) for writing plugins
+- [Escalated docs](https://escalated.dev/docs) · [Docs source](https://github.com/escalated-dev/escalated-docs) · [Shared frontend](https://github.com/escalated-dev/escalated)
 
 ## License
 
-MIT - Copyright (c) Escalated.dev. See [LICENSE](LICENSE).
+MIT. Copyright (c) Escalated.dev. See [LICENSE](LICENSE).
